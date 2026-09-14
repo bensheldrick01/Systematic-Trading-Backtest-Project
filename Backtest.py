@@ -1,3 +1,4 @@
+# Turns the combined signal into strategy returns, applying signal lag, transaction costs and a compounded equity curve.
 from Load_prices import fetch_close_prices, compute_returns
 from Signals import generate_momentum_signal, generate_mean_reversion_signal, combine_signals
 import pandas as pd
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     Close = fetch_close_prices("^GSPC", start="2018-01-01", end="2023-01-01")
     Returns = compute_returns(Close)
     combined_signal = combine_signals(generate_momentum_signal(Close), generate_mean_reversion_signal(Close))
-    
+
     print("Total strategy returns:", backtest_strategy_returns(Returns, combined_signal).sum())
     print("Total transaction costs:", transaction_costs(combined_signal).sum())
     print("Total net strategy returns:", net_strategy_returns(Returns, combined_signal).sum()) # ignores compounding - kept just for comparison with below

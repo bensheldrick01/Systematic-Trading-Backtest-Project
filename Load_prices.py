@@ -1,3 +1,4 @@
+# Fetches historical price data and computes daily returns with a chronological train/test split.
 import yfinance as yf
 
 def fetch_close_prices(ticker, start, end):

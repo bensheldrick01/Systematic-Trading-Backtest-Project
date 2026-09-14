@@ -1,3 +1,4 @@
+# Generates momentum and mean-reversion trading signals and combines them into one blended signal.
 from Load_prices import fetch_close_prices
 import numpy as np
 import pandas as pd

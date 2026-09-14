@@ -1,3 +1,4 @@
+# Computes risk-adjusted performance metrics (Sharpe, annualized return/volatility, max drawdown) from the strategy's returns.
 from Load_prices import fetch_close_prices, compute_returns
 from Signals import generate_momentum_signal, generate_mean_reversion_signal, combine_signals
 from Backtest import net_strategy_returns, equity_curve
