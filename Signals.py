@@ -44,6 +44,26 @@ def combine_signals(momentum_signal, mean_reversion_signal, threshold=0.2):
     combined_signal = np.where(blend > threshold, 1, np.where(blend < -threshold, -1, 0))
     return pd.Series(combined_signal, index=momentum_signal.index)
 
+# Testing combining signals by regime to improve performance in neutral regimes
+def combine_signals_by_regime(momentum_signal, mean_reversion_signal, regime,
+                                neutral_threshold=0.2, trending_threshold=0.7,
+                                neutral_weights=(0.2, 0.8), trending_weights=(0.8, 0.2)):
+    # Momentum-heavy with a high threshold in trending regimes (still allows flat on strong disagreement),
+    # mean-reversion-heavy with a low threshold in neutral regimes (to counter momentum's whipsaw losses there).
+    momentum_weight = np.where(regime == "Neutral", neutral_weights[0], trending_weights[0])
+    mean_reversion_weight = np.where(regime == "Neutral", neutral_weights[1], trending_weights[1])
+    blend = momentum_weight * momentum_signal + mean_reversion_weight * mean_reversion_signal
+    threshold = np.where(regime == "Neutral", neutral_threshold, trending_threshold)
+    combined_signal = np.where(blend > threshold, 1, np.where(blend < -threshold, -1, 0))
+    return pd.Series(combined_signal, index=momentum_signal.index)
+
+# Diagnostic: check the achievable blend values before trusting the thresholds, since weights now vary by regime.
+def explore_regime_blend_values(momentum_signal, mean_reversion_signal, regime, neutral_weights=(0.2, 0.8), trending_weights=(0.8, 0.2)):
+    momentum_weight = np.where(regime == "Neutral", neutral_weights[0], trending_weights[0])
+    mean_reversion_weight = np.where(regime == "Neutral", neutral_weights[1], trending_weights[1])
+    blend = momentum_weight * momentum_signal + mean_reversion_weight * mean_reversion_signal
+    print(sorted(blend.dropna().unique()))
+
 if __name__ == "__main__":
     Close = fetch_close_prices("^GSPC", start="2018-01-01", end="2023-01-01")
 
@@ -57,3 +77,12 @@ if __name__ == "__main__":
     print("\n Mean Reversion Signal:", mean_reversion_signal)
     explore_combined_signal_thresholds(momentum_signal, mean_reversion_signal)
     print("\n Combined Signal:", combined_signal)
+
+    print("\n Testing combine_signals_by_regime:")
+    from Regimes import identify_regimes, classify_regimes
+    regimes = classify_regimes(identify_regimes(Close))
+    combined_signal_by_regime = combine_signals_by_regime(momentum_signal, mean_reversion_signal, regimes)
+    print("\n Combined Signal by Regime:", combined_signal_by_regime)
+
+    print("\n Exploring Regime Blend Values:")
+    explore_regime_blend_values(momentum_signal, mean_reversion_signal, regimes)

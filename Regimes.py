@@ -12,6 +12,8 @@ def explore_distance_from_ma_thresholds(distance_from_ma):
     results = {}
     
     for threshold in thresholds:
+        # .dropna() here is required, not optional - without it, warmup NaN rows get
+        # miscounted into "Within Threshold" via the raw len() below.
         above_threshold = (distance_from_ma.dropna() > threshold).sum()
         below_threshold = (distance_from_ma.dropna() < -threshold).sum()
         within_threshold = len(distance_from_ma.dropna()) - above_threshold - below_threshold
@@ -23,6 +25,8 @@ def explore_distance_from_ma_thresholds(distance_from_ma):
     return results # 0.05 seems to be a good balance between regime frequency and strength
 
 def classify_regimes(distance_from_ma, threshold=0.05):
+    # isna() checked first so warmup days get an explicit "unknown" label,
+    # rather than silently defaulting into "Neutral" 
     regime = np.where(distance_from_ma.isna(), "unknown", np.where(distance_from_ma > threshold, "Bullish", np.where(distance_from_ma < -threshold, "Bearish", "Neutral")))
     return pd.Series(regime, index=distance_from_ma.index)
 

@@ -1,7 +1,7 @@
 # Computes risk-adjusted performance metrics (Sharpe, annualized return/volatility, max drawdown) from the strategy's returns.
 from Load_prices import fetch_close_prices, compute_returns
-from Signals import generate_momentum_signal, generate_mean_reversion_signal, combine_signals
-from Backtest import net_strategy_returns, equity_curve
+from Signals import generate_momentum_signal, generate_mean_reversion_signal, combine_signals, combine_signals_by_regime
+from Backtest import net_strategy_returns, equity_curve, backtest_strategy_returns
 from Regimes import identify_regimes, classify_regimes
 import numpy as np
 
@@ -29,6 +29,8 @@ def calculate_performance_by_regime(net_returns, regime):
         if not regime_returns.empty:
             performance_by_regime[label] = calculate_performance_metrics(regime_returns)
         else:
+            # guards against a regime with zero days - doesn't happen on this dataset,
+            # but could on a different asset/threshold where the regime mix differs
             performance_by_regime[label] = {
                 "Total Return": np.nan,
                 "Annualized Return": np.nan,
@@ -50,13 +52,19 @@ def print_metrics(metrics, title=None):
 if __name__ == "__main__":
     Close = fetch_close_prices("^GSPC", start="2018-01-01", end="2023-01-01")
     Returns = compute_returns(Close)
-    combined_signal = combine_signals(generate_momentum_signal(Close), generate_mean_reversion_signal(Close))
+    regimes = classify_regimes(identify_regimes(Close))
+    combined_signal = combine_signals_by_regime(generate_momentum_signal(Close), generate_mean_reversion_signal(Close), regimes)
     net_returns = net_strategy_returns(Returns, combined_signal, cost_per_trade=0.0005)
     performance_metrics = calculate_performance_metrics(net_returns)
     print_metrics(performance_metrics)
 
-    regimes = classify_regimes(identify_regimes(Close))
     performance_by_regime = calculate_performance_by_regime(net_returns, regimes)
     print("\nPerformance by Regime:")
     for regime_label, metrics in performance_by_regime.items():
+        print_metrics(metrics, title=f"Regime: {regime_label}")
+
+# diagnosing poor performance in neutral regimes by analyzing gross performance (before transaction costs)
+    gross_performance_by_regime = calculate_performance_by_regime(backtest_strategy_returns(Returns, combined_signal), regimes)
+    print("\nGross Performance by Regime:")
+    for regime_label, metrics in gross_performance_by_regime.items():
         print_metrics(metrics, title=f"Regime: {regime_label}")
