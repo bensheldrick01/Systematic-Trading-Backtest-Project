@@ -9,16 +9,18 @@ def compute_returns(prices):
     returns = prices.pct_change().dropna()
     return returns
 
+def train_test_split(returns, train_fraction=0.7):
+    cutoff = int(len(returns) * train_fraction)
+    return returns.iloc[:cutoff], returns.iloc[cutoff:]
+
 # guard keeps this block from re-running whenever this file is imported elsewhere
 if __name__ == "__main__":
     Close = fetch_close_prices("^GSPC", start="2018-01-01", end="2023-01-01")
     Returns = compute_returns(Close)
     print(Returns)
 
-    # train-test split
-    cutoff = int(len(Returns) * 0.7)
-    train = Returns.iloc[:cutoff]
-    test = Returns.iloc[cutoff:]
+    train_returns, test_returns = train_test_split(Returns, train_fraction=0.7)
+
 
 
 

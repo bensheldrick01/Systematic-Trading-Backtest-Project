@@ -1,5 +1,5 @@
 # Computes risk-adjusted performance metrics (Sharpe, annualized return/volatility, max drawdown) from the strategy's returns.
-from Load_prices import fetch_close_prices, compute_returns
+from Load_prices import fetch_close_prices, compute_returns, train_test_split
 from Signals import generate_momentum_signal, generate_mean_reversion_signal, combine_signals, combine_signals_by_regime
 from Backtest import net_strategy_returns, equity_curve, backtest_strategy_returns
 from Regimes import identify_regimes, classify_regimes
@@ -55,8 +55,16 @@ if __name__ == "__main__":
     regimes = classify_regimes(identify_regimes(Close))
     combined_signal = combine_signals_by_regime(generate_momentum_signal(Close), generate_mean_reversion_signal(Close), regimes)
     net_returns = net_strategy_returns(Returns, combined_signal, cost_per_trade=0.0005)
+    train_returns, test_returns = train_test_split(net_returns, train_fraction=0.7)
+
     performance_metrics = calculate_performance_metrics(net_returns)
     print_metrics(performance_metrics)
+
+    # NOTE: The following is not a true out-of-sample test - all thresholds/weights above were already chosen by
+    # exploring the FULL dataset (including this test period), so this doesn't yet prove generalisation.
+    # Walk-forward optimisation (re-fitting only on rolling train windows) is the real fix for that.
+    print_metrics(calculate_performance_metrics(train_returns), title="Train")
+    print_metrics(calculate_performance_metrics(test_returns), title="Test")
 
     performance_by_regime = calculate_performance_by_regime(net_returns, regimes)
     print("\nPerformance by Regime:")
