@@ -12,10 +12,16 @@ def transaction_costs(combined_signal, cost_per_trade=0.0005):
     costs = trades * cost_per_trade
     return costs
 
-def net_strategy_returns(Returns, combined_signal, cost_per_trade=0.0005): # ignores compounding - just for comparison
+def slippage_costs(combined_signal, slippage_per_trade=0.0001):
+    trades = combined_signal.shift(1).diff().abs()
+    costs = trades * slippage_per_trade
+    return costs
+
+def net_strategy_returns(Returns, combined_signal, cost_per_trade=0.0005, slippage_per_trade=0.0001): # ignores compounding - just for comparison
     strategy_returns = backtest_strategy_returns(Returns, combined_signal)
     costs = transaction_costs(combined_signal, cost_per_trade)
-    net_returns = strategy_returns - costs
+    slippage = slippage_costs(combined_signal, slippage_per_trade)
+    net_returns = strategy_returns - costs - slippage
     return net_returns
 
 def equity_curve(net_returns): # correctly accounts for compounding
@@ -29,5 +35,6 @@ if __name__ == "__main__":
 
     print("Total strategy returns:", backtest_strategy_returns(Returns, combined_signal).sum())
     print("Total transaction costs:", transaction_costs(combined_signal).sum())
+    print("Total slippage costs:", slippage_costs(combined_signal).sum())
     print("Total net strategy returns:", net_strategy_returns(Returns, combined_signal).sum()) # ignores compounding - kept just for comparison with below
     print("Equity Curve:", equity_curve(net_strategy_returns(Returns, combined_signal))) # cumulative product of net returns over time, showing the true growth of $1 invested in the strategy (in this case it's an 8% loss)
